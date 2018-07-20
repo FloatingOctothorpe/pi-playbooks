@@ -1,0 +1,7 @@
+# Install Git
+#
+---
+- name: 'install Git'
+  package:
+    name: 'git'
+    state: 'present'

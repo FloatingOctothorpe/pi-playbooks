@@ -1,0 +1,13 @@
+---
+- name: 'assemble iptables configuration'
+  assemble:
+    src: '/etc/network/iptables.d/'
+    dest: '/etc/network/iptables'
+    owner: 'root'
+    group: 'root'
+    mode: '0600'
+  notify:
+    - 'reload iptables rules'
+
+- name: 'reload iptables rules'
+  command: '/etc/network/if-pre-up.d/iptables'

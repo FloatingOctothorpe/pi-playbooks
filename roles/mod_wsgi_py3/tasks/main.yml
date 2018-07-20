@@ -1,0 +1,18 @@
+# Install WSGI support for Python 3
+#
+# Note: mod_wsgi will be uninstalled as it conflicts with with mod_wsgi_py3.
+#
+---
+- name: 'remove mod-wsgi'
+  package:
+    name: 'libapache2-mod-wsgi'
+    state: 'absent'
+  notify:
+    - 'restart Apache service'
+
+- name: 'install mod-wsgi-py3'
+  package:
+    name: 'libapache2-mod-wsgi-py3'
+    state: 'present'
+  notify:
+    - 'restart Apache service'

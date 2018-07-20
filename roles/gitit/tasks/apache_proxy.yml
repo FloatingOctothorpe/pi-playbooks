@@ -1,0 +1,32 @@
+---
+- name: 'enable Apache modules for Gitit'
+  apache2_module:
+    name: '{{ item }}'
+    state: 'present'
+  with_items:
+    - 'headers'
+    - 'proxy'
+    - 'proxy_html'
+    - 'proxy_http'
+  notify:
+   - 'restart Apache service'
+
+- name: 'deploy Apache config'
+  template:
+    src: 'apache.conf.j2'
+    dest: '/etc/apache2/conf-available/gitit.conf'
+    owner: 'root'
+    group: 'root'
+    mode: '0600'
+  notify:
+    - 'restart Apache service'
+
+- name: 'enable Gitit Apache configuration'
+  file:
+    src: '../conf-available/gitit.conf'
+    dest: '/etc/apache2/conf-enabled/gitit.conf'
+    state: 'link'
+    owner: 'root'
+    group: 'root'
+  notify:
+    - 'restart Apache service'

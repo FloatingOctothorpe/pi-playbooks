@@ -1,0 +1,7 @@
+# Install bottle for Python 3
+#
+---
+- name: 'install python3-bottle'
+  package:
+    name: 'python3-bottle'
+    state: 'present'

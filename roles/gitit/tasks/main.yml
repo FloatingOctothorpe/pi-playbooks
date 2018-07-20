@@ -1,0 +1,106 @@
+# Setup Gitit wiki
+#
+# vars
+# ----
+#
+#  gitit_address:
+#    Set the IP address Gitit will listen on. By default 127.0.0.1 is used,
+#    note Apache can be used to proxy requests.
+#
+#  gitit_apache_proxy_prefix:
+#    If specified configure Apache to proxy requests to Gitit for a given
+#    prefix. The prefix should include a trailing slash, for example "/wiki/".
+#
+#  gitit_math:
+#    Specify how LaTex math is displayed, by default no value is set.
+#
+#  gitit_require_auth:
+#    Specify if authentication is required, there are 3 valid options:
+#
+#      - 'none', login is never required, and pages can be edited anonymously.
+#
+#      - 'modify', login is required to modify the wiki (edit, add, delete
+#        pages, upload files).
+#
+#      - 'read', login is required to see any wiki pages.
+#
+#    'modify' is used by default.
+#
+#  gitit_user:
+#    The user account which should run the Gitit wiki. By default a gitit user
+#    account will be created.
+#
+#  gitit_wiki_title:
+#    The title Gitit should use, by default "Wiki" is used.
+#
+---
+- assert:
+    that:
+      - gitit_address != ''
+      - gitit_require_auth != ''
+      - gitit_user != ''
+      - gitit_wiki_title != ''
+    msg: 'check variables are defined'
+  tags: ['check_vars']
+
+# https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=865605
+- name: 'install Gitit dependencies'
+  package:
+    name: '{{ item }}'
+    state: 'present'
+  with_items:
+    - 'libghc-filestore-data'
+    - 'pandoc-data'
+
+- name: 'install Gitit package'
+  package:
+    name: 'gitit'
+    state: 'present'
+
+- name: 'create Gitit user'
+  user:
+    name: '{{ gitit_user }}'
+    createhome: 'yes'
+    shell: '/bin/bash'
+
+- name: 'restrict permission on /home/{{ gitit_user }}'
+  file:
+    name: '/home/{{ gitit_user }}'
+    owner: '{{ gitit_user }}'
+    group: '{{ gitit_user }}'
+    mode: '0700'
+
+- name: 'create Gitit wiki directory'
+  file:
+    state: 'directory'
+    path: '/home/{{ gitit_user }}/wiki'
+    owner: '{{ gitit_user }}'
+    group: '{{ gitit_user }}'
+    mode: '0750'
+
+- name: 'deploy systemd unit file'
+  template:
+    src: 'gitit.service.j2'
+    dest: '/etc/systemd/system/gitit.service'
+    owner: 'root'
+    group: 'root'
+    mode: '0644'
+
+- name: 'enable service'
+  service:
+    name: 'gitit'
+    enabled: 'yes'
+    state: 'started'
+
+- name: 'deploy config'
+  template:
+    src: 'gitit.j2'
+    dest: '/etc/gitit'
+    owner: 'root'
+    group: '{{ gitit_user }}'
+    mode: '0640'
+  notify:
+   - 'restart Gitit service'
+
+- include_tasks: 'apache_proxy.yml'
+  when: '"apache" in enabled_roles and gitit_apache_proxy_prefix != 0'

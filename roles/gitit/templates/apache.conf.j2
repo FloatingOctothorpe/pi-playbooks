@@ -1,0 +1,16 @@
+ProxyRequests Off
+
+<Proxy *>
+  Order deny,allow
+  Allow from all
+</Proxy>
+
+ProxyPass {{ gitit_apache_proxy_prefix }} http://{{ gitit_address }}:5001/
+
+<Location {{ gitit_apache_proxy_prefix }}>
+  SetOutputFilter  proxy-html
+  ProxyPassReverse /
+  ProxyHTMLURLMap  /   {{ gitit_apache_proxy_prefix }}
+  ProxyHTMLDocType "<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Strict//EN' 'http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd'>" XHTML
+  RequestHeader unset Accept-Encoding
+</Location>

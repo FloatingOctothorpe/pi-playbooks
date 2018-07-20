@@ -1,0 +1,8 @@
+---
+iptables_reject_unmatched_traffic: true
+
+iptables_rules:
+ - '-A INPUT -i lo -m comment --comment "Allow all loopback traffic" -j ACCEPT'
+ - '-A INPUT -p icmp -j ACCEPT'
+ - '-A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT'
+ - '-A INPUT -p tcp -m tcp --dport 22 -m comment --comment "Allow SSH" -j ACCEPT'

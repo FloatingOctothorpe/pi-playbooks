@@ -1,0 +1,7 @@
+---
+gitit_address: '127.0.0.1'
+gitit_apache_proxy_prefix: ''
+gitit_math: ''
+gitit_require_auth: 'modify'
+gitit_user: 'gitit'
+gitit_wiki_title: 'Wiki'

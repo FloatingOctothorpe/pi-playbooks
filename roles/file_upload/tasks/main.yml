@@ -1,0 +1,101 @@
+# Setup a HTTP file upload endpoint
+#
+# vars
+# ----
+#
+#  file_upload_dir:
+#    The directory files should be uploaded to.
+#
+#  file_upload_user:
+#    The user account which should run the file upload endpoint. By default an
+#    fupload user account will be created.
+#
+#  file_upload_prefix:
+#    The URL prefix which should be used for the file upload page. By default
+#    /upload is used.
+#
+#  file_upload_version:
+#    The version of file-upload application to use, by default the latest
+#    stable version (master) will be used.
+#
+---
+- assert:
+    that:
+      - file_upload_dir != ''
+      - file_upload_prefix != ''
+      - file_upload_user != ''
+      - file_upload_version != ''
+    msg: 'check variables are defined'
+  tags: ['check_vars']
+
+- name: 'create file upload user'
+  user:
+    name: '{{ file_upload_user }}'
+    createhome: 'yes'
+    shell: '/sbin/nologin'
+
+- name: 'restrict permission on /home/{{ file_upload_user }}'
+  file:
+    name: '/home/{{ file_upload_user }}'
+    owner: '{{ file_upload_user }}'
+    group: 'www-data'
+    mode: '0750'
+
+# Install ACL support so we can used a non-root user for the clone:
+#   https://docs.ansible.com/ansible/latest/become.html#becoming-an-unprivileged-user
+- name: 'install acl'
+  package:
+    name: 'acl'
+    state: 'present'
+
+- name: 'clone file upload application'
+  become: 'yes'
+  become_user: '{{ file_upload_user }}'
+  git:
+    repo: 'https://github.com/FloatingOctothorpe/file_upload.git'
+    dest: '/home/{{ file_upload_user }}/file_upload'
+    update: 'no'
+    version: '{{ file_upload_version }}'
+
+- name: 'deploy file_upload config file'
+  template:
+    src: 'file_upload.conf.j2'
+    dest: '/home/{{ file_upload_user }}/file_upload/file_upload.conf'
+    owner: '{{ file_upload_user }}'
+    group: '{{ file_upload_user }}'
+    mode: '0600'
+
+- name: 'restrict permission on /home/{{ file_upload_user }}/file_upload'
+  file:
+    name: '/home/{{ file_upload_user }}/file_upload'
+    owner: '{{ file_upload_user }}'
+    group: 'www-data'
+    mode: '0750'
+
+- name: 'create file upload directory'
+  file:
+    state: 'directory'
+    path: '/home/{{ file_upload_user }}/files'
+    owner: '{{ file_upload_user }}'
+    group: '{{ file_upload_user }}'
+    mode: '0700'
+
+- name: 'deploy Apache config'
+  template:
+    src: 'apache.conf.j2'
+    dest: '/etc/apache2/conf-available/file_upload.conf'
+    owner: 'root'
+    group: 'root'
+    mode: '0600'
+  notify:
+    - 'restart Apache service'
+
+- name: 'enable Apache configuration'
+  file:
+    src: '../conf-available/file_upload.conf'
+    dest: '/etc/apache2/conf-enabled/file_upload.conf'
+    state: 'link'
+    owner: 'root'
+    group: 'root'
+  notify:
+    - 'restart Apache service'

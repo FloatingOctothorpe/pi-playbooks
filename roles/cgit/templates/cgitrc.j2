@@ -1,0 +1,13 @@
+#
+# cgit config
+# see cgitrc(5) for details
+
+css=/cgit-css/cgit.css
+logo=/cgit-css/cgit.png
+
+#enable-commit-graph=1
+readme=README.md
+enable-http-clone=1
+source-filter=/usr/lib/cgit/filters/syntax-highlighting.py
+clone-prefix=ssh://git@{{ ansible_fqdn }}{{ cgit_git_dir }} https://{{ ansible_fqdn }}/cgit
+scan-path={{ cgit_git_dir }}

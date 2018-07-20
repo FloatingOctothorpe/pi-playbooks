@@ -1,0 +1,5 @@
+---
+file_upload_dir: '/home/{{ file_upload_user }}/files'
+file_upload_prefix: '/upload'
+file_upload_user: 'fupload'
+file_upload_version: 'master'

@@ -1,0 +1,77 @@
+# Deploy Cloudflare dynamic DNS script
+#
+# vars
+# ----
+#
+#  cloudflare_user:
+#    Name of the user account that should be create to run the update script
+#
+#  cloudflare_a_record:
+#    DNS record to update
+#
+#  cloudflare_zone:
+#    DNS zone the A record belongs to
+#
+#  cloudflare_email:
+#    Cloudflare account email address
+#
+#  cloudflare_key:
+#    Cloudflare API key
+#
+---
+- assert:
+    that:
+      - cloudflare_user != ''
+      - cloudflare_a_record != ''
+      - cloudflare_zone != ''
+      - cloudflare_email != ''
+      - cloudflare_key != ''
+    msg: 'check variables are defined'
+  tags: ['check_vars']
+
+- name: 'create cloudflare user'
+  user:
+    name: '{{ cloudflare_user }}'
+    createhome: 'yes'
+    shell: '/bin/bash'
+
+- name: 'restrict permission on /home/{{ cloudflare_user }}'
+  file:
+    name: '/home/{{ cloudflare_user }}'
+    mode: '0700'
+
+- name: 'install python-requests'
+  package:
+    name: 'python-requests'
+    state: 'present'
+
+# Install ACL support so we can used a non-root user for the clone:
+#   https://docs.ansible.com/ansible/latest/become.html#becoming-an-unprivileged-user
+- name: 'install acl'
+  package:
+    name: 'acl'
+    state: 'present'
+
+- name: 'clone update script'
+  become: 'yes'
+  become_user: '{{ cloudflare_user }}'
+  git:
+    repo: 'https://github.com/FloatingOctothorpe/cloudflare-dynamic-dns.git'
+    dest: '/home/{{ cloudflare_user }}/cloudflare-dynamic-dns'
+    update: 'no'
+
+- name: 'deploy config'
+  template:
+    src: 'config.j2'
+    dest: '/home/{{ cloudflare_user }}/cloudflare-dynamic-dns/cloudflare-dynamic-dns.json'
+    owner: '{{ cloudflare_user }}'
+    group: '{{ cloudflare_user }}'
+    mode: '0600'
+
+- name: 'setup cron job'
+  cron:
+    name: 'Update GitHub website'
+    minute: '*/15'
+    user: '{{ cloudflare_user }}'
+    job: "cd /home/{{ cloudflare_user }}/cloudflare-dynamic-dns && python update.py > /dev/null"
+    cron_file: 'cloudflare-dynamic-dns'

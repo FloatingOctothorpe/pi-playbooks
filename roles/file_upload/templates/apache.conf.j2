@@ -1,0 +1,8 @@
+WSGIDaemonProcess file_upload user={{ file_upload_user }} group={{ file_upload_user }} threads=5
+WSGIScriptAlias {{ file_upload_prefix }} /home/{{ file_upload_user }}/file_upload/file_upload.py
+
+<Directory /home/{{ file_upload_user }}/file_upload>
+    WSGIProcessGroup file_upload
+    WSGIApplicationGroup %{GLOBAL}
+    Require all granted
+</Directory>

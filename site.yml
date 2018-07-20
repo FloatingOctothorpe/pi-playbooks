@@ -1,0 +1,9 @@
+---
+- hosts: all
+  tasks:
+    - name: 'Include all configured roles'
+      include_role:
+        name: '{{ ansible_role }}'
+      with_items: '{{ enabled_roles }}'
+      loop_control:
+        loop_var: 'ansible_role'

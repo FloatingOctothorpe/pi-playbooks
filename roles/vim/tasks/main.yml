@@ -1,0 +1,12 @@
+# Install Vim and set it as the default editor
+#
+---
+- name: 'install Vim'
+  package:
+    name: 'vim'
+    state: 'present'
+
+- name: 'set default editor to Vim'
+  alternatives:
+    name: 'editor'
+    path: '/usr/bin/vim.basic'

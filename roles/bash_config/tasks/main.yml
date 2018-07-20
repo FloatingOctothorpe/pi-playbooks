@@ -1,0 +1,10 @@
+# Deploy custom bash profile configuration
+#
+---
+- name: 'deploy global config'
+  copy:
+    src: 'custom.sh'
+    dest: '/etc/profile.d/custom.sh'
+    owner: 'root'
+    group: 'root'
+    mode: '0644'

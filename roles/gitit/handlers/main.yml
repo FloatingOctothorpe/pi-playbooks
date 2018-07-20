@@ -1,0 +1,5 @@
+---
+- name: 'restart Gitit service'
+  service:
+    name: 'gitit'
+    state: 'restarted'

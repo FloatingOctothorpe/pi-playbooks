@@ -1,0 +1,80 @@
+# Install and configured cgit
+#
+# vars
+# ----
+#
+#  cgit_authorized_keys:
+#    Authorized keys which should have access to repositories hosted by cgit.
+#
+#  cgit_git_dir:
+#    Directory to store git repositories. By default '/var/git' will be used.
+#
+---
+- name: 'install cgit package'
+  package:
+    name: 'cgit'
+    state: 'present'
+
+- name: 'install python-pygments package'
+  package:
+    name: 'python3-pygments'
+    state: 'present'
+
+- name: 'create git user'
+  user:
+    name: 'git'
+    createhome: 'yes'
+    home: '{{ cgit_git_dir }}'
+    shell: '/bin/bash'
+
+- name: 'create Git repos directory'
+  file:
+    state: 'directory'
+    path: '{{ cgit_git_dir }}'
+    owner: 'git'
+    group: 'www-data'
+    mode: '0750'
+
+- name: 'create .ssh for git user'
+  file:
+    state: 'directory'
+    path: '{{ cgit_git_dir }}/.ssh'
+    owner: 'git'
+    group: 'git'
+    mode: '0700'
+
+- name: 'create authorized_keys for git user'
+  when: cgit_authorized_keys != []
+  template:
+    src: 'authorized_keys.j2'
+    dest: '{{ cgit_git_dir }}/.ssh/authorized_keys'
+    owner: 'git'
+    group: 'git'
+    mode: '0600'
+
+- name: 'deploy cgit config'
+  template:
+    src: 'cgitrc.j2'
+    dest: '/etc/cgitrc'
+    owner: 'root'
+    group: 'root'
+    mode: '0644'
+  notify:
+    - 'restart Apache service'
+
+- name: 'enable CGI support'
+  apache2_module:
+    name: 'cgid'
+    state: 'present'
+  notify:
+   - 'restart Apache service'
+
+- name: 'enable cgit Apache configuration'
+  file:
+    src: '../conf-available/cgit.conf'
+    dest: '/etc/apache2/conf-enabled/cgit.conf'
+    state: 'link'
+    owner: 'root'
+    group: 'root'
+  notify:
+    - 'restart Apache service'

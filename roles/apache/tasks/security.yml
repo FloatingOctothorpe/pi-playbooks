@@ -1,0 +1,35 @@
+# Apache configuration hardening
+#
+---
+- name: 'deploy hardening config'
+  when: apache_hardening_enabled
+  template:
+    src: 'z_hardening.conf.j2'
+    dest: '/etc/apache2/conf-available/z_hardening.conf'
+    owner: 'root'
+    group: 'root'
+    mode: '0600'
+  notify:
+    - 'restart Apache service'
+
+- name: 'enable z_hardening.conf config'
+  when: apache_hardening_enabled
+  file:
+    src: '../conf-available/z_hardening.conf'
+    dest: '/etc/apache2/conf-enabled/z_hardening.conf'
+    state: 'link'
+    owner: 'root'
+    group: 'root'
+  notify:
+    - 'restart Apache service'
+
+- name: 'remove hardening config'
+  when: not apache_hardening_enabled
+  file:
+    dest: '{{ item }}'
+    state: 'absent'
+  with_items:
+    - '/etc/apache2/conf-enabled/z_hardening.conf'
+    - '/etc/apache2/conf-available/z_hardening.conf'
+  notify:
+    - 'restart Apache service'

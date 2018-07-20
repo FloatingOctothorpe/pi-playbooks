@@ -1,0 +1,108 @@
+# Configure software firewall (iptables)
+#
+# iptables rules are build from fragments, each fragment should be prefixed
+# with a two digit number. The prefix is used to control the order each
+# fragment will appear in the final iptables configuration.
+#
+#   00-09: create iptables filters
+#   10-19: general rules
+#   20-29: application rules from other roles
+#   30-89: unused
+#   90-99: drop rules
+#
+# Other roles can add additional accept rules by inserting a fragment, for
+# example:
+#
+#    - name: 'deploy 20-foobar.iptables fragment'
+#      when: iptables_reject_unmatched_traffic
+#      copy:
+#        content: "-A INPUT -p tcp -m tcp --dport 12321 -m comment --comment \"Allow foobar traffic\" -j ALLOW\n"
+#        dest: '/etc/network/iptables.d/20-foobar.iptables'
+#        owner: 'root'
+#        group: 'root'
+#        mode: '0600'
+#      notify:
+#        - 'assemble iptables configuration'
+#
+# vars
+# ----
+#
+#  iptables_reject_unmatched_traffic:
+#    Specify if unmatched traffic should be rejected.
+#
+#  iptables_rules:
+#    Specify rules which should be included, by default SSH, ping and loopback
+#    traffic is allowed.
+#
+---
+- assert:
+    that:
+      - iptables_reject_unmatched_traffic != ''
+      - iptables_rules != ''
+    msg: 'check variables are defined'
+  tags: ['check_vars']
+
+- name: 'install script to load iptables configuration'
+  copy:
+    src: 'load_iptables.sh'
+    dest: '/etc/network/if-pre-up.d/iptables'
+    owner: 'root'
+    group: 'root'
+    mode: '0700'
+
+- name: 'create iptables fragment directory'
+  file:
+    state: 'directory'
+    path: '/etc/network/iptables.d'
+    owner: 'root'
+    group: 'root'
+    mode: '0700'
+
+- name: 'deploy 00-chains.iptables fragment'
+  copy:
+    src: '00-chains.iptables'
+    dest: '/etc/network/iptables.d/00-chains.iptables'
+    owner: 'root'
+    group: 'root'
+    mode: '0600'
+  notify:
+    - 'assemble iptables configuration'
+
+- name: 'deploy 10-rules.iptables fragment'
+  template:
+    src: 'iptables.j2'
+    dest: '/etc/network/iptables.d/10-rules.iptables'
+    owner: 'root'
+    group: 'root'
+    mode: '0600'
+  notify:
+    - 'assemble iptables configuration'
+
+- name: 'deploy 90-reject.iptables fragment'
+  when: iptables_reject_unmatched_traffic
+  copy:
+    content: "-A INPUT -m comment --comment \"reject unmatched traffic\" -j REJECT --reject-with icmp-port-unreachable\n"
+    dest: '/etc/network/iptables.d/90-reject.iptables'
+    owner: 'root'
+    group: 'root'
+    mode: '0600'
+  notify:
+    - 'assemble iptables configuration'
+
+- name: 'remove 90-reject.iptables fragment'
+  when: not iptables_reject_unmatched_traffic
+  file:
+    state: 'absent'
+    path: '/etc/network/iptables.d/90-reject.iptables'
+  notify:
+    - 'assemble iptables configuration'
+
+- name: 'deploy 99-commit.iptables fragment'
+  copy:
+    content: "COMMIT\n"
+    dest: '/etc/network/iptables.d/99-commit.iptables'
+    owner: 'root'
+    group: 'root'
+    mode: '0600'
+  notify:
+    - 'assemble iptables configuration'

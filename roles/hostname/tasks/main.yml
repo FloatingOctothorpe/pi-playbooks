@@ -1,0 +1,17 @@
+# Set system hostname
+#
+# vars
+# ----
+#
+#  hostname:
+#    The target hostname of the system
+#
+---
+- assert:
+    that:
+      - hostname != ''
+    msg: 'check variables are defined'
+  tags: ['check_vars']
+
+- hostname:
+    name: '{{ hostname }}'

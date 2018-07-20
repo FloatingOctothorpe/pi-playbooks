@@ -1,0 +1,103 @@
+# Setup a Flask kanban board
+#
+# vars
+# ----
+#
+#  kanban_board_user:
+#    The user account which should run the Kanban board. By default a kanban
+#    user will be created.
+#
+#  kanban_board_prefix:
+#    The URL prefix which should be used for the kanban board. By default
+#    /kanban is used.
+#
+#  kanban_board_version:
+#    The version of python-kanban to use, by default the latest stable version
+#    (master) will be used.
+#
+---
+- assert:
+    that:
+      - kanban_board_user != ''
+      - kanban_board_prefix != ''
+      - kanban_board_version != ''
+    msg: 'check variables are defined'
+  tags: ['check_vars']
+
+- name: 'create kanban user'
+  user:
+    name: '{{ kanban_board_user }}'
+    createhome: 'yes'
+    shell: '/sbin/nologin'
+
+- name: 'restrict permission on /home/{{ kanban_board_user }}'
+  file:
+    name: '/home/{{ kanban_board_user }}'
+    owner: '{{ kanban_board_user }}'
+    group: 'www-data'
+    mode: '0750'
+
+# Install ACL support so we can used a non-root user for the clone:
+#   https://docs.ansible.com/ansible/latest/become.html#becoming-an-unprivileged-user
+- name: 'install acl'
+  package:
+    name: 'acl'
+    state: 'present'
+
+- name: 'clone kanban application'
+  become: 'yes'
+  become_user: '{{ kanban_board_user }}'
+  git:
+    repo: 'https://github.com/FloatingOctothorpe/python-kanban.git'
+    dest: '/home/{{ kanban_board_user }}/kanban'
+    update: 'no'
+    version: '{{ kanban_board_version }}'
+
+- name: 'restrict permission on /home/{{ kanban_board_user }}/kanban'
+  file:
+    name: '/home/{{ kanban_board_user }}/kanban'
+    owner: '{{ kanban_board_user }}'
+    group: '{{ kanban_board_user }}'
+    mode: '0700'
+
+# Install venv support from Python 3
+- name: 'install python3-venv'
+  package:
+    name: 'python3-venv'
+    state: 'present'
+
+- name: 'setup virtual env'
+  become: 'yes'
+  become_user: '{{ kanban_board_user }}'
+  pip:
+    requirements: '/home/{{ kanban_board_user }}/kanban/requirements.txt'
+    virtualenv: '/home/{{ kanban_board_user }}/venv'
+    virtualenv_command: 'pyvenv-3.5'
+
+- name: 'deploy Kanban board WSGI script'
+  template:
+    src: 'kanban.wsgi.j2'
+    dest: '/home/{{ kanban_board_user }}/kanban.wsgi'
+    owner: 'root'
+    group: 'root'
+    mode: '0755'
+
+- name: 'deploy kanban.conf Apache config'
+  template:
+    src: 'kanban.apache2.j2'
+    dest: '/etc/apache2/conf-available/kanban.conf'
+    owner: 'root'
+    group: 'root'
+    mode: '0600'
+  notify:
+    - 'restart Apache service'
+
+- name: 'enable kanban.conf Apache config'
+  file:
+    src: '../conf-available/kanban.conf'
+    dest: '/etc/apache2/conf-enabled/kanban.conf'
+    state: 'link'
+    owner: 'root'
+    group: 'root'
+  notify:
+    - 'restart Apache service'

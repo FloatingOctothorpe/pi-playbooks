@@ -1,0 +1,64 @@
+# Install and configure Apache
+#
+# vars
+# ----
+#
+#  apache_hardening_disable_trace:
+#    Explicitly disable the Trace method if set.
+#
+#  apache_hardening_disable_server_signature:
+#    If true hide Apache version information from server headers and banners.
+#
+#  apache_iptables_rules:
+#    A list of iptables rules to add for Apache, by default 80 and 443 will be
+#    allowed for 192.168.0.0/16.
+#
+#  apache_site_name:
+#    Site name to use for the primary Apache SSL virtual host, this should
+#    match the cn used in the subject of the x509 certificate. By default
+#    '{{ ansible_fqdn }}' will be used.
+#
+#  apache_site_aliases:
+#    An array of site aliases that should be used in the primary Apache SSL
+#    virtual host.
+#
+#  apache_ssl_certs:
+#    ASCII armoured public certificate chain, including all certificates.
+#
+#  apache_ssl_key:
+#    ASCII armoured private key.
+#
+---
+- assert:
+    that:
+      - apache_hardening_disable_server_signature in [True, False]
+      - apache_hardening_disable_trace in [True, False]
+      - apache_iptables_rules != ''
+      - apache_site_name != ''
+    msg: 'check variables are defined'
+  tags: ['check_vars']
+
+- name: 'install Apache'
+  package:
+    name:  'apache2'
+    state: 'present'
+
+- name: 'enable service'
+  service:
+    name: 'apache2'
+    enabled: 'yes'
+    state: 'started'
+
+- name: 'deploy 20-apache.iptables fragment'
+  when: '"iptables" in enabled_roles'
+  template:
+    src: 'apache.iptables.j2'
+    dest: '/etc/network/iptables.d/20-apache.iptables'
+    owner: 'root'
+    group: 'root'
+    mode: '0600'
+  notify:
+    - 'assemble iptables configuration'
+
+- include_tasks: 'security.yml'
+- include_tasks: 'tls.yml'

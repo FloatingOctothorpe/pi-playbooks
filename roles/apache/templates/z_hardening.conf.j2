@@ -1,0 +1,17 @@
+# Apache server hardening
+#
+# Note:
+#  This file is prefixed with `z_` so it can override settings in #
+#  security.conf
+
+
+{% if apache_hardening_disable_server_signature %}
+# Disable signature
+ServerSignature Off
+ServerTokens Prod
+{% endif %}
+
+{% if apache_hardening_disable_trace %}
+# Disable TRACE method
+TraceEnable Off
+{% endif %}

@@ -1,0 +1,5 @@
+---
+dependencies:
+  - 'git'
+  - role: 'apache'
+    when: '"apache" in enabled_roles'

@@ -1,0 +1,6 @@
+---
+dependencies:
+  - 'apache'
+  - 'git'
+  - 'mod_wsgi_py3'
+  - 'python3_bottle'

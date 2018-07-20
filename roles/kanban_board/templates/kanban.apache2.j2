@@ -1,0 +1,8 @@
+WSGIDaemonProcess kanban user={{ kanban_board_user }} group={{ kanban_board_user }} threads=5 python-home=/home/{{ kanban_board_user }}/venv
+WSGIScriptAlias {{ kanban_board_prefix }} /home/{{ kanban_board_user }}/kanban.wsgi
+
+<Directory /home/{{ kanban_board_user }}>
+    WSGIProcessGroup kanban
+    WSGIApplicationGroup %{GLOBAL}
+    Require all granted
+</Directory>

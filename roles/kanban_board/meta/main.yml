@@ -1,0 +1,4 @@
+---
+dependencies:
+  - 'git'
+  - 'mod_wsgi_py3'

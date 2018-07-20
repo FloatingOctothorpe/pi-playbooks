@@ -1,0 +1,7 @@
+# Install cURL
+#
+---
+- name: 'install cURL'
+  package:
+    name: 'curl'
+    state: 'present'

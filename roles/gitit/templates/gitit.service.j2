@@ -1,0 +1,12 @@
+[Unit]
+Description=Gitit wiki
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/gitit --config-file=/etc/gitit
+WorkingDirectory=/home/{{ gitit_user }}/wiki
+User={{ gitit_user }}
+Group={{ gitit_user }}
+
+[Install]
+WantedBy=multi-user.target

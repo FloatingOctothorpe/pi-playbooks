@@ -1,0 +1,8 @@
+#!/usr/bin/env python3
+
+import sys
+import os
+sys.path.insert(0, '/home/{{ kanban_board_user }}/kanban')
+os.chdir('/home/{{ kanban_board_user }}/kanban')
+
+from main import app as application

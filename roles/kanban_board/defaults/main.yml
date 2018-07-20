@@ -1,0 +1,4 @@
+---
+kanban_board_user: 'kanban'
+kanban_board_prefix: '/kanban'
+kanban_board_version: 'master'
