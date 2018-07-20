@@ -1,2 +1,5 @@
 #Ignore vim swap files
 *.swp
+
+#Ignore Ansible site.retry file
+site.retry
