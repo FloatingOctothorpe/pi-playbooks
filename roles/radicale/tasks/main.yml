@@ -1,0 +1,145 @@
+# Install and configure Radicale
+#
+# vars
+# ----
+#
+#  radicale_address:
+#    The address Radicale should bind to (default: '0.0.0.0').
+#
+#  radicale_auth_type:
+#    Authentication method to use, the following are currently supported:
+#
+#    None | htpasswd | IMAP | LDAP | PAM | courier | http
+#
+#    (None by default)
+#
+#  radicale_daemon:
+#    Specify if Radicale should run as a daemon (default: true)
+#
+#  radicale_filesystem_folder:
+#    Directory were content should be stored
+#    (default: '/var/lib/radicale/collections').
+#
+#  radicale_htpasswd_filename:
+#    File to store htpasswd information in (default: '/etc/radicale/users').
+#
+#  radicale_htpasswd_content:
+#    Content of the htpasswd file, for example:
+#
+#      user:password
+#
+#  radicale_htpasswd_encryption:
+#    Type of hash used in the htpasswd file (default: 'plain').
+#
+#  radicale_port:
+#    The TCP port Radicale should listen on (default: 5232)
+#
+#  radicale_rights_type:
+#    Authorization type to use, the following options are currently supported:
+#
+#    None | authenticated | owner_only | owner_write | from_file | custom
+#
+#    (None by default)
+#
+#  radicale_ssl_cert:
+#    ASCII armoured public certificate chain, including all certificates.
+#
+#  radicale_ssl_cert_path:
+#    Where the Radicale certificate file should be stored
+#    (default: '/etc/radicale/cert.pem').
+#
+#  radicale_ssl_key:
+#    ASCII armoured private key
+#
+#  radicale_ssl_key_path:
+#    Where the Radicale private key should be stored
+#    (default: '/etc/radicale/key.pem').
+#
+---
+- name: 'install Radicale'
+  package:
+    name: 'radicale'
+    state: 'present'
+
+- name: 'setup configuration'
+  template:
+    src: 'config.j2'
+    dest: '/etc/radicale/config'
+    owner: 'root'
+    group: 'radicale'
+    mode: '0640'
+  notify:
+    - 'restart Radicale service'
+
+- name: 'deploy SSL public certificate'
+  when: radicale_ssl_cert != ''
+  copy:
+    content: '{{radicale_ssl_cert}}'
+    dest: '{{radicale_ssl_cert_path}}'
+    owner: 'root'
+    group: 'root'
+    mode: '0644'
+  notify:
+    - 'restart Radicale service'
+
+- name: 'deploy SSL private key'
+  when: radicale_ssl_key != ''
+  copy:
+    content: '{{radicale_ssl_key}}'
+    dest: '{{radicale_ssl_key_path}}'
+    owner: 'root'
+    group: 'radicale'
+    mode: '0640'
+  notify:
+    - 'restart Radicale service'
+
+- name: 'remove SSL certs config'
+  when: (radicale_ssl_cert == '' or radicale_ssl_key == '')
+  file:
+    dest: '{{ item }}'
+    state: 'absent'
+  with_items:
+    - '{{radicale_ssl_cert_path}}'
+    - '{{radicale_ssl_key_path}}'
+  notify:
+    - 'restart Radicale service'
+
+- name: 'setup htpasswd file'
+  when: radicale_auth_type == 'htpasswd' and radicale_htpasswd_content != ''
+  copy:
+    content: '{{ radicale_htpasswd_content }}'
+    dest: '{{ radicale_htpasswd_filename }}'
+    owner: 'root'
+    group: 'radicale'
+    mode: '0640'
+
+- name: 'remove htpasswd file'
+  when: radicale_auth_type != 'htpasswd' or radicale_htpasswd_content == ''
+  file:
+    dest: '{{ radicale_htpasswd_filename }}'
+    state: 'absent'
+
+- name: 'update /etc/default/radicale'
+  replace:
+    dest: '/etc/default/radicale'
+    regexp: '^#*(ENABLE_RADICALE)=.*$'
+    replace: '\1=yes'
+  notify:
+    - 'restart Radicale service'
+
+- name: 'enable service'
+  service:
+    name: 'radicale'
+    enabled: 'yes'
+    state: 'started'
+
+- name: 'deploy 20-radicale.iptables fragment'
+  when: '"iptables" in enabled_roles'
+  template:
+    src: 'radicale.iptables.j2'
+    dest: '/etc/network/iptables.d/20-radicale.iptables'
+    owner: 'root'
+    group: 'root'
+    mode: '0600'
+  notify:
+    - 'assemble iptables configuration'

@@ -1,0 +1,5 @@
+---
+- name: 'restart Radicale service'
+  service:
+    name: 'radicale'
+    state: 'restarted'

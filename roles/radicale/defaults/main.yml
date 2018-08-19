@@ -1,0 +1,19 @@
+---
+radicale_address: '0.0.0.0'
+radicale_port: 5232
+
+radicale_auth_type: 'None'
+
+radicale_ssl_cert: ''
+radicale_ssl_cert_path: '/etc/radicale/cert.pem'
+radicale_ssl_key: ''
+radicale_ssl_key_path: '/etc/radicale/key.pem'
+
+radicale_daemon: true
+
+radicale_filesystem_folder: '/var/lib/radicale/collections'
+
+radicale_htpasswd_filename: '/etc/radicale/users'
+radicale_htpasswd_content: ''
+radicale_htpasswd_encryption: 'plain'
+radicale_rights_type: 'None'
