@@ -9,15 +9,24 @@
 #  cgit_git_dir:
 #    Directory to store git repositories. By default '/var/git' will be used.
 #
+#  cgit_markdown_support:
+#    Specify if cgit should render markdown readme files.
+#
 ---
 - name: 'install cgit package'
   package:
     name: 'cgit'
     state: 'present'
 
-- name: 'install python-pygments package'
+- name: 'install python3-pygments package'
   package:
     name: 'python3-pygments'
+    state: 'present'
+
+- name: 'install python3-markdown package'
+  when: cgit_markdown_support
+  package:
+    name: 'python3-markdown'
     state: 'present'
 
 - name: 'create git user'

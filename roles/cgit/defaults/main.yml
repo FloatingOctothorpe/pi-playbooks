@@ -1,3 +1,4 @@
 ---
 cgit_authorized_keys: []
 cgit_git_dir: '/var/git'
+cgit_markdown_support: true
