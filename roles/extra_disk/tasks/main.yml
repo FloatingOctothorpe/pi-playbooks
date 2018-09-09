@@ -1,0 +1,53 @@
+# Mount an extra disk
+#
+# Note: this role will only mount a pre-formatted disk, the disk must be
+# partitioned and formatted before using this module.
+#
+# vars
+# ----
+#
+#  extra_disk_device:
+#    The path to the device being mounted, `/dev/sda1` by default.
+#
+#  extra_disk_fs_type:
+#    The filesystem type, `ext4` by default.
+#
+#  extra_disk_group:
+#    The group of the mount point directory, `root` by default.
+#
+#  extra_disk_mode:
+#    The file permissions on the mount point directory, `0755` by default
+#
+#  extra_disk_mount_options:
+#    Any mount options which should be used, `defaults` by default.
+#
+#  extra_disk_owner:
+#    The owner of the mount point directory, `root` by default.
+#
+#  extra_disk_path:
+#    The directory the device should be mounted to, `/var/data` by default.
+#
+---
+- name: 'Create mount point'
+  file:
+    state: 'directory'
+    path: '{{ extra_disk_path }}'
+    owner: '{{ extra_disk_owner }}'
+    group: '{{ extra_disk_group }}'
+    mode: '{{ extra_disk_mode }}'
+
+- name: 'Mount extra disk'
+  mount:
+    state: 'mounted'
+    path: '{{ extra_disk_path }}'
+    src: '{{ extra_disk_device }}'
+    fstype: '{{ extra_disk_fs_type }}'
+    opts: '{{ extra_disk_mount_options }}'
+
+- name: 'Set mount point permissions'
+  file:
+    state: 'directory'
+    path: '{{ extra_disk_path }}'
+    owner: '{{ extra_disk_owner }}'
+    group: '{{ extra_disk_group }}'
+    mode: '{{ extra_disk_mode }}'
